@@ -1,0 +1,44 @@
+// Este módulo se encargará de manejar la lógica relacionada con los pop-ups de notificaciones en el sistema.   
+         NOTIFICACIONES NIVEL ADMIN: SISTEMAS, GERENCIA
+    TABLA: "bz_notificaciones"
+    Columnas: id, telefono,  id_usuario, id_marcador, fecha_consulta, IdCamp
+    se traspasan los datos que se envian con activos a spam "/mover-spam" y se muestra en formato de pop up con el contenido:
+    "nombres" y "apellidos" ha enviado (count del total de veces que se repite id_usuario en el dia actual) numeros a spam"
+    y guardarse como contador en un icono en el header en el front con el numero de notificaciones que llegan, al entrar al contador
+    debe estar separadas las notificaciones por usuarios, es decir si un usuario envia 15 numeros a spam, no se muestran 15 filas, 
+    se muestra una sola con el nombre del usuario y a su costado un boton de ver historial y de minimizar esa vista, en esa vista,
+    se debe mostrar el detalle campaña, numero, hora, marcador.
+    JOINS: 
+    id_usuario de bz notificaciones con id de biznes_dbaplicacion.ra_usuarios y muestra "nombres" y "apellidos"
+    ejemplo de popup: Soledad Adriana Villavicencio Palomino ha enviado 5 números a SPAM hoy
+    ejemplo de detalle al dar clic en ver historial: 
+Campaña	Número	Hora	Marcador
+370 Leads Externo OncoSalud	906004061	2026-03-27 15:28:27	223
+370 Leads Externo OncoSalud	907571854	2026-03-27 10:49:52	231
+370 Leads Externo OncoSalud	907602979	2026-03-27 10:48:15	231
+ este tipo de notificaciones debe mostrarse solo a los que tengan id_tipo_usuario = "1", "2", "6" en la tabla biznes_dbaplicacion.ra_usuarios, 
+y enviar la data lista para ser recibida por el front
+debe usar apis asi: /notificaciones-sistemas/obtener
+esta api debe realizar consultas automaticamente cada 20 segundos para verificar si hay nuevas notificaciones, y mostrar el pop up correspondinte
+
+
+
+    NOTIFICACIONES NIVEL USUARIO
+    TABLA: "notificaciones"
+    Columnas: id, id_key, id_camp, fecha_registro, leido_por
+    llegan las notificaciones segun los datos de la tabla notificaciones, de muestra un pop up usando el contenido de la columnas id_camp
+    y hace un join con la tabla bz_campanas, columna IdCamp y muestra "Campana" y "fecha_registro"
+    ejemplo de pop up: Se ha agregado un nuevo lead en la campaña 90 Interseguro Vida   |   2026-03-27 15:40:04
+    esto se mostrara permanentemente hasta cerrarlo, al cerrarlo se llenara la columna "leido_por" con el id del primer usuario que lo ha cerrado, 
+    para que no vuelva a aparecer ese mismo pop up al mismo usuario, y luego se guardara en un contador en el header del front con el numero de 
+    notificaciones que han sido cerradas, al entrar al contador se mostrara el contenido: 
+    listado asi: 
+    Se ha agregado un nuevo lead en la campaña 90 Interseguro Vida   |   2026-03-27 15:40:04
+    Se ha agregado un nuevo lead en la campaña oncosalud   |   2026-03-27 15:45:04
+    ...
+    estas notificaciones se muestran con las campañas, asi que solo se deben mostrar a los usuarios con dichas campañas asignadas, 
+    corroborando la id_camp de esta tabla con biznes_dbaplicacion.ra_usuario_camp matching el id_camp con el id_usuario del usuario logueado
+este tipo de notificaciones debe mostrarse solo a los que tengan id_tipo_usuario = "3", "4", "5" en la tabla biznes_dbaplicacion.ra_usuarios, 
+    debe usar apis asi: /notificaciones-supervisor/obtener
+
+esta api deben realizar consultas automaticamente cada 20 segundos para verificar si hay nuevas notificaciones, y mostrar el pop up correspondinte

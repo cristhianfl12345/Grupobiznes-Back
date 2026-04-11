@@ -1,0 +1,8 @@
+#Dependencias
+node_modules/
+dist/
+build/
+.DS_store
+npm-debug.log
+
+Ejemplo_protected_files.txt
