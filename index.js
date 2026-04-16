@@ -11,11 +11,14 @@ import {
   obtenerNotificacionesSupervisor,
   marcarLeidaSupervisor
 } from "./modules/componentes/complementoPopUp.js";
+import leadsRoutes from './modules/leads/leads.routes.js'
+
 const app = express()
 app.use(cors())
 app.use(express.json())
 
 app.use("/api", marcadoresControl)
+app.use("/api/leads", leadsRoutes)
 app.use("/api/auth", authController)
 app.get("/api/vistas", getVistas)
 app.post("/api/vistasss", crearVista);
