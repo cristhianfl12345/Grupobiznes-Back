@@ -18,7 +18,7 @@ app.use(cors())
 app.use(express.json())
 
 app.use("/api", marcadoresControl)
-app.use("/api/leads", leadsRoutes)
+app.use("/api/leads", verifyToken, leadsRoutes)
 app.use("/api/auth", authController)
 app.get("/api/vistas", getVistas)
 app.post("/api/vistasss", crearVista);
