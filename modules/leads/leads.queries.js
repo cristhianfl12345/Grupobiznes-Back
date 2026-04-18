@@ -164,7 +164,7 @@ FROM admin.campanas c
 INNER JOIN admin.vistas v
     ON c.id_vista = v."Id_vista"
 WHERE 
-    c.id_campana = $1
+    c.id_camp = $1
     AND c.activa = true
     AND v.activo = true
 ORDER BY v."Id_vista"

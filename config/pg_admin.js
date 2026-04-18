@@ -1,3 +1,4 @@
+//back/config/pg_admin.js
 import pkg from 'pg'
 const { Pool } = pkg
 

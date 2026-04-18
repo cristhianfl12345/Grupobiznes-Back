@@ -12,10 +12,12 @@ import {
   marcarLeidaSupervisor
 } from "./modules/componentes/complementoPopUp.js";
 import leadsRoutes from './modules/leads/leads.routes.js'
+import controlModulosRoutes from "./modules/controlModulos/controlM.controller.js";
 
 const app = express()
 app.use(cors())
 app.use(express.json())
+app.use("/api", controlModulosRoutes)
 
 app.use("/api", marcadoresControl)
 app.use("/api/leads", verifyToken, leadsRoutes)

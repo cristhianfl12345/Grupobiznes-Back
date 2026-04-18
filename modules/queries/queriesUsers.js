@@ -1,7 +1,7 @@
 // back/modules/queries/queriesUsers.js
 
 // ==============================
-// 👥 GET USUARIOS
+//  GET USUARIOS
 // ==============================
 export const QUERY_GET_USUARIOS = `
 SELECT 
@@ -23,7 +23,7 @@ ORDER BY u.id ASC
 
 
 // ==============================
-// 📊 CAMPAÑAS POR USUARIO
+// CAMPAÑAS POR USUARIO
 // ==============================
 export const QUERY_GET_CAMPANAS_USUARIO = `
 SELECT 
@@ -34,18 +34,18 @@ FROM admin.ra_usuario_camp ruc
 
 
 // ==============================
-// 📊 CAMPAÑAS DASHBOARD
+// CAMPAÑAS DASHBOARD
 // ==============================
 export const QUERY_GET_CAMPANAS_DASHBOARD = `
 SELECT 
-    id_campana AS "IdCamp",
+    id_camp AS "IdCamp",
     nombre AS "Campana"
 FROM admin.campanas
 `;
 
 
 // ==============================
-// ✏️ UPDATE USUARIO
+// UPDATE USUARIO
 // ==============================
 export const QUERY_UPDATE_USUARIO = `
 UPDATE admin.ra_usuarios
@@ -64,7 +64,7 @@ WHERE id = $9
 
 
 // ==============================
-// 🧹 DELETE USUARIO
+// DELETE USUARIO
 // ==============================
 export const QUERY_DELETE_USUARIO = `
 DELETE FROM admin.ra_usuarios
@@ -73,7 +73,7 @@ WHERE id = $1
 
 
 // ==============================
-// 🧹 DELETE RELACIÓN CAMPAÑAS
+// DELETE RELACIÓN CAMPAÑAS
 // ==============================
 export const QUERY_DELETE_USUARIO_CAMP = `
 DELETE FROM admin.ra_usuario_camp
@@ -82,9 +82,9 @@ WHERE id_usuario = $1
 
 
 // ==============================
-// ➕ INSERT RELACIÓN CAMPAÑAS
+// INSERT RELACIÓN CAMPAÑAS
 // ==============================
-// ⚠️ PostgreSQL NO acepta VALUES ?
+// PostgreSQL NO acepta VALUES ?
 // debes construir dinámicamente los valores
 
 export const QUERY_INSERT_USUARIO_CAMP = `
@@ -117,8 +117,8 @@ VALUES (
     $5,  -- estado
     $6,  -- id_tipo_usuario
     $7,  -- id_grupo
-    1,   -- 🔥 id_camp fijo
-    '00000000', -- 🔥 nro_doc fijo
+    1,   --  id_camp fijo
+    '00000000', --  nro_doc fijo
     NULL, -- reportes (puede ser null)
     NOW(),
     NOW()

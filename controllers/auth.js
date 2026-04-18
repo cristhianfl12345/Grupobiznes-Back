@@ -223,7 +223,7 @@ router.get("/mis-campanas/:idUsuario", async (req, res) => {
     if (rolesFullAccess.includes(user.id_tipo_usuario)) {
       const { rows } = await pg_admindb.query(`
         SELECT 
-          id_campana AS "IdCamp",
+          id_camp AS "IdCamp",
           nombre AS "Campana"
         FROM admin.campanas
         ORDER BY nombre ASC
@@ -233,11 +233,11 @@ router.get("/mis-campanas/:idUsuario", async (req, res) => {
       const { rows } = await pg_admindb.query(
         `
         SELECT 
-          c.id_campana AS "IdCamp",
+          c.id_camp AS "IdCamp",
           c.nombre AS "Campana"
         FROM admin.campanas c
         INNER JOIN admin.ra_usuario_camp uc 
-          ON uc.id_camp = c.id_campana
+          ON uc.id_camp = c.id_camp
         WHERE uc.id_usuario = $1
         ORDER BY c.nombre ASC
         `,
