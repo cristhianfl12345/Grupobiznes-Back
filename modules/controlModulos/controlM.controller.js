@@ -26,7 +26,7 @@ const checkRole = (rolesPermitidos) => (req, res, next) => {
 };
 
 // Roles con acceso total
-const ROLES_FULL = [1, 2, 6];
+const ROLES_FULL = [1, 2, 3, 4, 5, 6];
 
 // ==============================
 // GET TODOS / FILTRADO

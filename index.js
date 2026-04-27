@@ -13,11 +13,15 @@ import {
 } from "./modules/componentes/complementoPopUp.js";
 import leadsRoutes from './modules/leads/leads.routes.js'
 import controlModulosRoutes from "./modules/controlModulos/controlM.controller.js";
+import moduloBasesRouter from "./modules/mBases/moduloBases.js";
+import http from "http";
+import { initNotiSocket } from "./modules/componentes/notiSocket.js";
 
 const app = express()
 app.use(cors())
 app.use(express.json())
 app.use("/api", controlModulosRoutes)
+app.use("/api/modulo-bases", moduloBasesRouter)
 
 app.use("/api", marcadoresControl)
 app.use("/api/leads", verifyToken, leadsRoutes)
@@ -31,16 +35,21 @@ app.put("/api/vistas-filtradas/:id", updateVista);
 app.get("/api/usuarios-get", obtenerUsuarios)
 //  kpis
 app.get("/api/kpis", verifyToken, getKpis)
-app.put("/api/usuarios/:id", updateUsuario);
-app.delete("/api/usuarios/:id", deleteUsuario);
+app.put("/api/usuarios/:id", verifyToken, updateUsuario);
+app.delete("/api/usuarios/:id", verifyToken, deleteUsuario);
 //  popup
 app.get("/api/notificaciones-sistemas/obtener", verifyToken, obtenerNotificaciones);
 app.get("/api/notificaciones-sistemas/detalle/:idUsuario", verifyToken, obtenerDetalleNotificacion);
 app.get("/api/notificaciones-supervisor/obtener", verifyToken, obtenerNotificacionesSupervisor);
 app.post("/api/notificaciones-supervisor/marcar-leida", verifyToken, marcarLeidaSupervisor);
-app.post("/api/usuarios", createUsuario);
+app.post("/api/usuarios", verifyToken, createUsuario);
 const PORT = 4000
 
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`)
-})
+const server = http.createServer(app);
+
+// inicializar sockets
+initNotiSocket(server);
+
+server.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+});
