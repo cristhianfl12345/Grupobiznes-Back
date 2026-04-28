@@ -26,9 +26,11 @@ ORDER BY v.level ASC;
 // CAMPAÑAS POR USUARIO
 // ==============================
 export const QUERY_GET_CAMPANAS_BY_USER = `
-SELECT id_camp 
-FROM admin.ra_usuario_camp 
-WHERE id_usuario = $1;
+SELECT uc.id_camp, c.activa
+FROM admin.ra_usuario_camp uc
+JOIN admin.campanas c ON uc.id_camp = c.id_camp
+WHERE uc.id_usuario = $1 
+  AND c.activa = true;
 `;
 
 
@@ -37,7 +39,8 @@ WHERE id_usuario = $1;
 // ==============================
 export const QUERY_GET_ALL_CAMPANAS = `
 SELECT id_camp 
-FROM admin.campanas;
+FROM admin.campanas
+where activa = true
 `;
 
 

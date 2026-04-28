@@ -11,6 +11,7 @@ SELECT
 FROM admin.control_de_modulos cm
 INNER JOIN admin.campanas c 
     ON c.id_camp = cm.id_camp
+    WHERE c.activa = true
 ORDER BY c.id_camp ASC, cm.id_modulo ASC
 `;
 

@@ -32,7 +32,6 @@ SELECT
 FROM admin.ra_usuario_camp ruc
 `;
 
-
 // ==============================
 // CAMPAÑAS DASHBOARD
 // ==============================
@@ -41,6 +40,7 @@ SELECT
     id_camp AS "IdCamp",
     nombre AS "Campana"
 FROM admin.campanas
+WHERE activa = true
 `;
 
 

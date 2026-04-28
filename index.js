@@ -35,14 +35,14 @@ app.put("/api/vistas-filtradas/:id", updateVista);
 app.get("/api/usuarios-get", obtenerUsuarios)
 //  kpis
 app.get("/api/kpis", verifyToken, getKpis)
-app.put("/api/usuarios/:id", verifyToken, updateUsuario);
-app.delete("/api/usuarios/:id", verifyToken, deleteUsuario);
+app.put("/api/usuarios/:id", updateUsuario);
+app.delete("/api/usuarios/:id", deleteUsuario);
 //  popup
 app.get("/api/notificaciones-sistemas/obtener", verifyToken, obtenerNotificaciones);
 app.get("/api/notificaciones-sistemas/detalle/:idUsuario", verifyToken, obtenerDetalleNotificacion);
 app.get("/api/notificaciones-supervisor/obtener", verifyToken, obtenerNotificacionesSupervisor);
 app.post("/api/notificaciones-supervisor/marcar-leida", verifyToken, marcarLeidaSupervisor);
-app.post("/api/usuarios", verifyToken, createUsuario);
+app.post("/api/usuarios",  createUsuario);
 const PORT = 4000
 
 const server = http.createServer(app);
