@@ -56,7 +56,7 @@ router.post("/login", async (req, res) => {
 
     const user = rows[0];
 
-    // 🔥 FIX: asegurar tipo numérico
+    // asegurar tipo numérico
     if (Number(user.estado) !== 1) {
       return res.status(403).json({
         ok: false,
@@ -67,7 +67,7 @@ router.post("/login", async (req, res) => {
     let validPassword = false;
     const dbPassword = user.password.trim();
 
-    // 🔥 bcrypt (todos los prefijos)
+    // bcrypt (todos los prefijos)
     if (dbPassword.startsWith("$2")) {
       validPassword = await bcrypt.compare(password, dbPassword);
     }
@@ -226,7 +226,8 @@ router.get("/mis-campanas/:idUsuario", async (req, res) => {
           id_camp AS "IdCamp",
           nombre AS "Campana"
         FROM admin.campanas
-        ORDER BY nombre ASC
+        WHERE activa = true
+        ORDER BY id_camp ASC
       `);
       campanas = rows;
     } else {

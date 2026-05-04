@@ -14,8 +14,12 @@ import {
 import leadsRoutes from './modules/leads/leads.routes.js'
 import controlModulosRoutes from "./modules/controlModulos/controlM.controller.js";
 import moduloBasesRouter from "./modules/mBases/moduloBases.js";
+import { buscarLeadsController } from "./modules/busqueda/busqueda.model.js"
 import http from "http";
 import { initNotiSocket } from "./modules/componentes/notiSocket.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./swagger/swagger.js";
+
 
 const app = express()
 app.use(cors())
@@ -43,6 +47,9 @@ app.get("/api/notificaciones-sistemas/detalle/:idUsuario", verifyToken, obtenerD
 app.get("/api/notificaciones-supervisor/obtener", verifyToken, obtenerNotificacionesSupervisor);
 app.post("/api/notificaciones-supervisor/marcar-leida", verifyToken, marcarLeidaSupervisor);
 app.post("/api/usuarios",  createUsuario);
+//busqueda
+app.get("/api/busqueda", buscarLeadsController);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const PORT = 4000
 
 const server = http.createServer(app);

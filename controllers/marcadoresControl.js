@@ -1,5 +1,5 @@
 import express from "express"
-import db from "../config/dbmsql.js"
+import {db} from "../config/db.js"
 import fetch from "node-fetch"
 
 const router = express.Router()
@@ -11,10 +11,11 @@ const router = express.Router()
 router.get("/campanas", async (req, res) => {
   try {
 
-    const [rows] = await db.query(`
-      SELECT IdCamp, Campana
-      FROM bz_campanas
-      ORDER BY Campana ASC
+    const {rows} = await db.query(`
+      SELECT id_camp, nombre
+      FROM admin.campanas
+      WHERE activa = true  
+      ORDER BY id_camp ASC 
     `)
 
     res.json(rows)
@@ -33,12 +34,12 @@ router.get("/marcadores/:idCamp", async (req, res) => {
 
   try {
 
-    const { idCamp } = req.params
+    const idCamp = Number(req.params.idCamp)
 
-    const [rows] = await db.query(`
-      SELECT id_marcador, marcador, IdCamp
-      FROM bz_marcadores
-      WHERE IdCamp = ?
+    const { rows } = await db.query(`
+      SELECT id_marcador, marcador, id_camp
+      FROM admin.marcadores
+      WHERE id_camp = $1
       ORDER BY marcador ASC
     `, [idCamp])
 
@@ -61,31 +62,31 @@ router.get("/activos/:idCamp", async (req, res) => {
 
   try {
 
-    const { idCamp } = req.params
+    const idCamp = Number(req.params.idCamp)
 
-    const [rows] = await db.query(`
+    const { rows } = await db.query(`
      SELECT 
         a.id,
         a.telefono,
 
         a.id_usuario,
-        CONCAT(u.nombres, ' ', u.apellidos) AS usuario_nombre,
+        u.nombres || ' ' || u.apellidos AS usuario_nombre,
 
         a.id_marcador,
-        CONCAT(a.id_marcador, ' - ', m.marcador) AS marcador_nombre,
+        a.id_marcador || ' - ' || m.marcador AS marcador_nombre,
 
         a.fecha_consulta
 
-      FROM telefonos_activos a
+      FROM admin.telefonos_activos a
 
-      LEFT JOIN biznes_dbaplicacion.ra_usuarios u
+      LEFT JOIN admin.ra_usuarios u
         ON u.id = a.id_usuario
 
-      LEFT JOIN bz_marcadores m
+      LEFT JOIN admin.marcadores m
         ON m.id_marcador = a.id_marcador
-        AND m.IdCamp = a.IdCamp
+        AND m.id_camp = a.id_camp
 
-      WHERE a.IdCamp = ?
+      WHERE a.id_camp = $1
       ORDER BY a.fecha_consulta DESC
     `, [idCamp])
 
@@ -108,31 +109,31 @@ router.get("/spam/:idCamp", async (req, res) => {
 
   try {
 
-    const { idCamp } = req.params
+    const idCamp = Number(req.params.idCamp)
 
-    const [rows] = await db.query(`
+    const { rows } = await db.query(`
      SELECT 
         s.id,
         s.telefono,
 
         s.id_usuario,
-        CONCAT(u.nombres, ' ', u.apellidos) AS usuario_nombre,
+        u.nombres || ' ' || u.apellidos AS usuario_nombre,
 
         s.id_marcador,
-        CONCAT(s.id_marcador, ' - ', m.marcador) AS marcador_nombre,
+        s.id_marcador || ' - ' || m.marcador AS marcador_nombre,
 
         s.fecha_consulta
 
-      FROM telefonos_spam s
+      FROM admin.telefonos_spam s
 
-      LEFT JOIN biznes_dbaplicacion.ra_usuarios u
+      LEFT JOIN admin.ra_usuarios u
         ON u.id = s.id_usuario
 
-      LEFT JOIN bz_marcadores m
+      LEFT JOIN admin.marcadores m
         ON m.id_marcador = s.id_marcador
-        AND m.IdCamp = s.IdCamp
+        AND m.id_camp = s.id_camp
 
-      WHERE s.IdCamp = ?
+      WHERE s.id_camp = $1
       ORDER BY s.fecha_consulta DESC
     `, [idCamp])
 
@@ -159,13 +160,13 @@ const { idCamp, idMarcador, cantidad } = req.body
 
 const limit = Number(cantidad) || 1
 
-const [telefonos] = await db.query(`
+const { rows: telefonos } = await db.query(`
   SELECT id, telefono
-  FROM gen_masks
+  FROM admin.gen_masks
   WHERE telefono IS NOT NULL
-  ORDER BY RAND()
-  LIMIT ${limit}
-`)
+  ORDER BY RANDOM()
+  LIMIT $1
+`, [limit])
 
     res.json({
       status: true,
@@ -173,7 +174,7 @@ const [telefonos] = await db.query(`
         id_gen_mask: t.id,
         telefono: t.telefono,
         id_marcador: idMarcador,
-        IdCamp: idCamp
+        id_camp: idCamp
       }))
     })
 
@@ -192,36 +193,36 @@ const [telefonos] = await db.query(`
 
 router.post("/confirmar-mascaras", async (req, res) => {
 
-  const conn = await db.getConnection()
+  const conn = await db.connect()
 
   try {
 
     const { ids, idCamp, idMarcador, id_usuario } = req.body
 
-    await conn.beginTransaction()
+    await conn.query("BEGIN")
 
-    const [telefonos] = await conn.query(`
+    const { rows: telefonos } = await conn.query(`
       SELECT *
-      FROM gen_masks
-      WHERE id IN (?)
+      FROM admin.gen_masks
+      WHERE id = ANY($1)
     `, [ids])
 
     for (const t of telefonos) {
 
       await conn.query(`
-        INSERT INTO telefonos_activos
-        (telefono, id_usuario, id_marcador, IdCamp, fecha_consulta)
-        VALUES (?,?,?,?,NOW())
+        INSERT INTO admin.telefonos_activos
+        (telefono, id_usuario, id_marcador, id_camp, fecha_consulta)
+        VALUES ($1,$2,$3,$4,NOW())
       `, [t.telefono, id_usuario, idMarcador, idCamp])
 
       await conn.query(`
-        DELETE FROM gen_masks
-        WHERE id = ?
+        DELETE FROM admin.gen_masks
+        WHERE id = $1
       `, [t.id])
 
     }
 
-    await conn.commit()
+    await conn.query("COMMIT")
     await exportarLogsGoogle(idCamp)
 
     res.json({
@@ -231,7 +232,7 @@ router.post("/confirmar-mascaras", async (req, res) => {
 
   } catch (err) {
 
-    await conn.rollback()
+    await conn.query("ROLLBACK")
     console.error(err)
 
     res.status(500).json({
@@ -252,52 +253,53 @@ router.post("/confirmar-mascaras", async (req, res) => {
 
 router.post("/mover-spam", async (req, res) => {
 
-  const conn = await db.getConnection()
+  const conn = await db.connect()
 
   try {
 
     const { id, id_usuario } = req.body
 
-    await conn.beginTransaction()
+    await conn.query("BEGIN")
 
-    const [[activo]] = await conn.query(`
+    const { rows } = await conn.query(`
       SELECT *
-      FROM telefonos_activos
-      WHERE id = ?
+      FROM admin.telefonos_activos
+      WHERE id = $1
     `, [id])
+const activo = rows[0]
 
     if (!activo) {
 
-      await conn.rollback()
+      await conn.query("ROLLBACK")
       return res.json({ status: false })
 
     }
 
     await conn.query(`
-      INSERT INTO telefonos_spam
-      (telefono, id_usuario,id_marcador,IdCamp,fecha_consulta)
-      VALUES (?,?,?,?,NOW())
-    `, [activo.telefono, id_usuario, activo.id_marcador, activo.IdCamp])
+      INSERT INTO admin.telefonos_spam
+      (telefono, id_usuario,id_marcador,id_camp,fecha_consulta)
+      VALUES ($1,$2,$3,$4,NOW())
+    `, [activo.telefono, id_usuario, activo.id_marcador, activo.id_camp])
         await conn.query(`
-      INSERT INTO bz_notificaciones
-      (telefono, id_usuario,id_marcador,IdCamp,fecha_consulta)
-      VALUES (?,?,?,?,NOW())
-    `, [activo.telefono, id_usuario, activo.id_marcador, activo.IdCamp])
+      INSERT INTO admin.notificaciones_marcadores
+      (telefono, id_usuario,id_marcador,id_camp,fecha_consulta)
+      VALUES ($1,$2,$3,$4,NOW())
+    `, [activo.telefono, id_usuario, activo.id_marcador, activo.id_camp])
 
 
     await conn.query(`
-      DELETE FROM telefonos_activos
-      WHERE id = ?
+      DELETE FROM admin.telefonos_activos
+      WHERE id = $1
     `, [id])
 
-    await conn.commit()
-    await exportarLogsGoogle(activo.IdCamp)
+    await conn.query("COMMIT")
+    await exportarLogsGoogle(activo.id_camp)
 
     res.json({ status: true })
 
   } catch (err) {
 
-    await conn.rollback()
+    await conn.query("ROLLBACK")
     console.error(err)
 
     res.status(500).json({
@@ -318,30 +320,34 @@ router.post("/mover-spam", async (req, res) => {
 
 router.post("/reemplazar-spam", async (req, res) => {
 
-  const conn = await db.getConnection()
+  const conn = await db.connect()
 
   try {
 
     const { id, id_usuario } = req.body
 
-    await conn.beginTransaction()
+    await conn.query("BEGIN")
 
-    const [[spam]] = await conn.query(`
-      SELECT *
-      FROM telefonos_spam
-      WHERE id = ?
-    `, [id])
+const { rows: spamRows } = await conn.query(`
+  SELECT *
+  FROM admin.telefonos_spam
+  WHERE id = $1
+`, [id])
 
-    const [[nuevo]] = await conn.query(`
-      SELECT id,telefono
-      FROM gen_masks
-      ORDER BY RAND()
-      LIMIT 1
-    `)
+const spam = spamRows[0]
+
+const { rows: nuevoRows } = await conn.query(`
+  SELECT id,telefono
+  FROM admin.gen_masks
+  ORDER BY RANDOM()
+  LIMIT 1
+`)
+
+const nuevo = nuevoRows[0]
 
     if (!spam || !nuevo) {
 
-      await conn.rollback()
+      await conn.query("ROLLBACK")
       return res.json({
         status:false
       })
@@ -349,23 +355,23 @@ router.post("/reemplazar-spam", async (req, res) => {
     }
 
     await conn.query(`
-      INSERT INTO telefonos_activos
-      (telefono, id_usuario, id_marcador, IdCamp, fecha_consulta)
-      VALUES (?,?,?,?,NOW())
-    `, [nuevo.telefono, id_usuario, spam.id_marcador, spam.IdCamp])
+      INSERT INTO admin.telefonos_activos
+      (telefono, id_usuario, id_marcador, id_camp, fecha_consulta)
+      VALUES ($1,$2,$3,$4,NOW())
+    `, [nuevo.telefono, id_usuario, spam.id_marcador, spam.id_camp])
 
     await conn.query(`
-      DELETE FROM telefonos_spam
-      WHERE id = ?
+      DELETE FROM admin.telefonos_spam
+      WHERE id = $1
     `, [id])
 
     await conn.query(`
-      DELETE FROM gen_masks
-      WHERE id = ?
+      DELETE FROM admin.gen_masks
+      WHERE id = $1
     `, [nuevo.id])
 
-    await conn.commit()
-    await exportarLogsGoogle(spam.IdCamp)
+    await conn.query("COMMIT")
+    await exportarLogsGoogle(spam.id_camp)
 
     res.json({
       status:true,
@@ -374,7 +380,7 @@ router.post("/reemplazar-spam", async (req, res) => {
 
   } catch (err) {
 
-    await conn.rollback()
+    await conn.query("ROLLBACK")
     console.error(err)
 
     res.status(500).json({
@@ -446,9 +452,9 @@ router.get("/resumen-marcadores/:idCamp", async (req, res) => {
 
   try {
 
-    const { idCamp } = req.params
+    const idCamp = Number(req.params.idCamp)
 
-    const [rows] = await db.query(`
+    const { rows } = await db.query(`
 
       SELECT 
         m.id_marcador,
@@ -457,23 +463,25 @@ router.get("/resumen-marcadores/:idCamp", async (req, res) => {
         COUNT(DISTINCT a.id) AS activos,
         COUNT(DISTINCT s.id) AS spam
 
-      FROM bz_marcadores m
+      FROM admin.marcadores m
 
-      LEFT JOIN telefonos_activos a
+      LEFT JOIN admin.telefonos_activos a
         ON a.id_marcador = m.id_marcador
-        AND a.IdCamp = m.IdCamp
+        AND a.id_camp = m.id_camp
 
-      LEFT JOIN telefonos_spam s
+      LEFT JOIN admin.telefonos_spam s
         ON s.id_marcador = m.id_marcador
-        AND s.IdCamp = m.IdCamp
+        AND s.id_camp = m.id_camp
 
-      WHERE m.IdCamp = ?
+      WHERE m.id_camp = $1
 
       GROUP BY 
         m.id_marcador,
         m.marcador
 
-      HAVING activos > 0 OR spam > 0
+      HAVING 
+  COUNT(DISTINCT a.id) > 0 
+  OR COUNT(DISTINCT s.id) > 0
 
       ORDER BY m.marcador ASC
 
@@ -500,31 +508,31 @@ const QUERY_LOGS = `
 SELECT * FROM (
 
   /* =========================
-     TELÉFONOS ACTIVOS
+     TELÉFONOS ACTIVOS     (c.nombre era c.Campana, corroborar tabla)
   ========================= */
   SELECT
     '' AS id,
-    c.IdCamp AS idcamp,
-    c.Campana AS campana,
+    c.id_camp AS idcamp,
+    c.nombre AS campana, 
     m.id_marcador,
     m.marcador,
     t.telefono,
 
-    CONCAT(u1.nombres, ' ', u1.apellidos) AS asignadopor,
+    u1.nombres || ' ' || u1.apellidos AS asignadopor,
     t.fecha_consulta AS fecha_asignado,
 
     'telefonos_activos' AS estado,
     NULL AS movidopor,
     NULL AS fecha_movimiento
 
-  FROM telefonos_activos t
-  JOIN bz_campanas c ON c.IdCamp = t.IdCamp
+  FROM admin.telefonos_activos t
+  JOIN admin.campanas c ON c.id_camp = t.id_camp
 
-  LEFT JOIN bz_marcadores m
+  LEFT JOIN admin.marcadores m
     ON m.id_marcador = t.id_marcador
-    AND m.IdCamp = t.IdCamp
+    AND m.id_camp = t.id_camp
 
-  LEFT JOIN biznes_dbaplicacion.ra_usuarios u1
+  LEFT JOIN admin.ra_usuarios u1
     ON u1.id = t.id_usuario
 
   UNION ALL
@@ -534,38 +542,38 @@ SELECT * FROM (
   ========================= */
   SELECT
     '' AS id,
-    c.IdCamp AS idcamp,
-    c.Campana AS campana,
+    c.id_camp AS idcamp,
+    c.nombre AS campana,
     m.id_marcador,
     m.marcador,
     s.telefono,
 
-    CONCAT(u1.nombres, ' ', u1.apellidos) AS asignadopor,
+    u1.nombres || ' ' || u1.apellidos AS asignadopor,
     a.fecha_consulta AS fecha_asignado,
 
     'telefonos_spam' AS estado,
-    CONCAT(u2.nombres, ' ', u2.apellidos) AS movidopor,
+    u2.nombres || ' ' || u2.apellidos AS movidopor,
     s.fecha_consulta AS fecha_movimiento
 
-  FROM telefonos_spam s
-  JOIN bz_campanas c ON c.IdCamp = s.IdCamp
+  FROM admin.telefonos_spam s
+  JOIN admin.campanas c ON c.id_camp = s.id_camp
 
-  LEFT JOIN telefonos_activos a
+  LEFT JOIN admin.telefonos_activos a
     ON a.telefono = s.telefono
-    AND a.IdCamp = s.IdCamp
+    AND a.id_camp = s.id_camp
 
-  LEFT JOIN bz_marcadores m
+  LEFT JOIN admin.marcadores m
     ON m.id_marcador = a.id_marcador
-    AND m.IdCamp = a.IdCamp
+    AND m.id_camp = a.id_camp
 
-  LEFT JOIN biznes_dbaplicacion.ra_usuarios u1
+  LEFT JOIN admin.ra_usuarios u1
     ON u1.id = a.id_usuario
 
-  LEFT JOIN biznes_dbaplicacion.ra_usuarios u2
+  LEFT JOIN admin.ra_usuarios u2
     ON u2.id = s.id_usuario
 
 ) x
-WHERE x.idcamp = ?
+WHERE x.idcamp = $1
 `
 
 
@@ -574,14 +582,14 @@ WHERE x.idcamp = ?
 // ============================
 router.post("/exportar-logs-google/:idCamp", async (req, res) => {
   try {
-    const { idCamp } = req.params
+    const idCamp = Number(req.params.idCamp)
 
     if (!idCamp || Number(idCamp) <= 0) {
       console.error("EXPORT LOGS GOOGLE | Campaña inválida")
       return res.status(400).json({ ok: false })
     }
 
-    const [data] = await db.query(QUERY_LOGS, [idCamp])
+    const { rows: data } = await db.query(QUERY_LOGS, [idCamp])
 
     if (!data.length) {
       console.log("EXPORT LOGS GOOGLE | Sin datos")
@@ -621,7 +629,7 @@ router.post("/exportar-logs-google/:idCamp", async (req, res) => {
 // ============================
 async function exportarLogsGoogle(idCamp, conn = db) {
   try {
-    const [data] = await conn.query(QUERY_LOGS, [idCamp])
+    const { rows: data } = await conn.query(QUERY_LOGS, [idCamp])
 
     if (!data.length) return
 
@@ -646,7 +654,7 @@ async function exportarLogsGoogle(idCamp, conn = db) {
 // ============================
 router.post("/mover-spam-bulk", async (req, res) => {
 
-  const conn = await db.getConnection();
+  const conn = await db.connect();
 
   try {
 
@@ -656,51 +664,59 @@ router.post("/mover-spam-bulk", async (req, res) => {
       return res.json({ status: false, msg: "IDs vacíos" });
     }
 
-    await conn.beginTransaction();
+    await conn.query("BEGIN");
 
-    // 🔹 Obtener todos los activos seleccionados
-    const [activos] = await conn.query(`
+    // Obtener todos los activos seleccionados
+    const { rows: activos } = await conn.query(`
       SELECT *
-      FROM telefonos_activos
-      WHERE id IN (?)
+      FROM admin.telefonos_activos
+      WHERE id = ANY($1)
     `, [ids]);
 
     if (!activos.length) {
-      await conn.rollback();
+      await conn.query("ROLLBACK");
       return res.json({ status: false, msg: "Sin registros" });
     }
 
-    // 🔹 Insert masivo a SPAM
-    const valuesSpam = activos.map(a => [
-      a.telefono,
-      id_usuario,
-      a.id_marcador,
-      a.IdCamp
-    ]);
+    // Insert masivo a SPAM
+const valuesSpam = activos.map(a => [
+  a.telefono,
+  id_usuario,
+  a.id_marcador,
+  a.id_camp
+])
 
-    await conn.query(`
-      INSERT INTO telefonos_spam
-      (telefono, id_usuario, id_marcador, IdCamp, fecha_consulta)
-      VALUES ${valuesSpam.map(() => "(?,?,?,?,NOW())").join(",")}
-    `, valuesSpam.flat());
+const values = []
 
-    // 🔹 Insert masivo a NOTIFICACIONES
-    await conn.query(`
-      INSERT INTO bz_notificaciones
-      (telefono, id_usuario, id_marcador, IdCamp, fecha_consulta)
-      VALUES ${valuesSpam.map(() => "(?,?,?,?,NOW())").join(",")}
-    `, valuesSpam.flat());
+const placeholders = valuesSpam.map((v, i) => {
+  const idx = i * 4
+  values.push(...v)
+  return `($${idx+1}, $${idx+2}, $${idx+3}, $${idx+4}, NOW())`
+}).join(",")
 
-    // 🔹 Eliminar activos
+await conn.query(`
+  INSERT INTO admin.telefonos_spam
+  (telefono, id_usuario, id_marcador, id_camp, fecha_consulta)
+  VALUES ${placeholders}
+`, values)
+
+    // Insert masivo a NOTIFICACIONES
     await conn.query(`
-      DELETE FROM telefonos_activos
-      WHERE id IN (?)
+      INSERT INTO admin.notificaciones_marcadores
+      (telefono, id_usuario, id_marcador, id_camp, fecha_consulta)
+      VALUES ${placeholders}
+    `, values);
+
+    // Eliminar activos
+    await conn.query(`
+      DELETE FROM admin.telefonos_activos
+      WHERE id = ANY($1)
     `, [ids]);
 
-    await conn.commit();
+    await conn.query("COMMIT");
 
-    // 🔹 Exportar logs UNA SOLA VEZ (optimizado)
-    await exportarLogsGoogle(activos[0].IdCamp);
+    // Exportar logs UNA SOLA VEZ (optimizado)
+    await exportarLogsGoogle(activos[0].id_camp);
 
     res.json({
       status: true,
@@ -709,7 +725,7 @@ router.post("/mover-spam-bulk", async (req, res) => {
 
   } catch (err) {
 
-    await conn.rollback();
+    await conn.query("ROLLBACK");
     console.error(err);
 
     res.status(500).json({
@@ -728,7 +744,7 @@ router.post("/mover-spam-bulk", async (req, res) => {
 // ============================
 router.post("/reemplazar-spam-bulk", async (req, res) => {
 
-  const conn = await db.getConnection();
+  const conn = await db.connect();
 
   try {
 
@@ -738,68 +754,77 @@ router.post("/reemplazar-spam-bulk", async (req, res) => {
       return res.json({ status: false, msg: "IDs vacíos" });
     }
 
-    await conn.beginTransaction();
+    await conn.query("BEGIN");
 
-    // 🔹 Obtener spam seleccionados
-    const [spams] = await conn.query(`
-      SELECT *
-      FROM telefonos_spam
-      WHERE id IN (?)
+    // Obtener spam seleccionados
+// Obtener spam seleccionados
+const { rows: spams } = await conn.query(`
+  SELECT *
+  FROM admin.telefonos_spam
+  WHERE id = ANY($1)
+`, [ids]);
+
+if (!spams.length) {
+  await conn.query("ROLLBACK");
+  return res.json({ status: false, msg: "Sin registros" });
+}
+
+// Obtener máscaras necesarias
+const { rows: mascaras } = await conn.query(`
+  SELECT id, telefono
+  FROM admin.gen_masks
+  ORDER BY RANDOM()
+  LIMIT $1
+`, [spams.length]);
+
+if (mascaras.length < spams.length) {
+  await conn.query("ROLLBACK");
+  return res.json({
+    status: false,
+    msg: "No hay suficientes máscaras"
+  });
+}
+
+// Construcción correcta
+const valuesActivos = spams.map((s, i) => [
+  mascaras[i].telefono,
+  id_usuario,
+  s.id_marcador,
+  s.id_camp
+]);
+
+const values = [];
+
+const placeholders = valuesActivos.map((v, i) => {
+  const idx = i * 4;
+  values.push(...v);
+  return `($${idx+1}, $${idx+2}, $${idx+3}, $${idx+4}, NOW())`;
+}).join(",");
+
+// Insert correcto
+await conn.query(`
+  INSERT INTO admin.telefonos_activos
+  (telefono, id_usuario, id_marcador, id_camp, fecha_consulta)
+  VALUES ${placeholders}
+`, values);
+    // Eliminar spam antiguos
+    await conn.query(`
+      DELETE FROM admin.telefonos_spam
+      WHERE id = ANY($1)
     `, [ids]);
 
-    if (!spams.length) {
-      await conn.rollback();
-      return res.json({ status: false, msg: "Sin registros" });
-    }
-
-    // 🔹 Obtener máscaras necesarias
-    const [mascaras] = await conn.query(`
-      SELECT id, telefono
-      FROM gen_masks
-      ORDER BY RAND()
-      LIMIT ?
-    `, [spams.length]);
-
-    if (mascaras.length < spams.length) {
-      await conn.rollback();
-      return res.json({
-        status: false,
-        msg: "No hay suficientes máscaras"
-      });
-    }
-
-    // 🔹 Insertar nuevos activos
-    const valuesActivos = spams.map((s, i) => [
-      mascaras[i].telefono,
-      id_usuario,
-      s.id_marcador,
-      s.IdCamp
-    ]);
-
-    await conn.query(`
-      INSERT INTO telefonos_activos
-      (telefono, id_usuario, id_marcador, IdCamp, fecha_consulta)
-      VALUES ${valuesActivos.map(() => "(?,?,?,?,NOW())").join(",")}
-    `, valuesActivos.flat());
-
-    // 🔹 Eliminar spam antiguos
-    await conn.query(`
-      DELETE FROM telefonos_spam
-      WHERE id IN (?)
-    `, [ids]);
-
-    // 🔹 Eliminar máscaras usadas
+    // Eliminar máscaras usadas
     const idsMascaras = mascaras.map(m => m.id);
 
     await conn.query(`
-      DELETE FROM gen_masks
-      WHERE id IN (?)
+      DELETE FROM admin.gen_masks
+      WHERE id = ANY($1)
     `, [idsMascaras]);
 
-    await conn.commit();
+    await conn.query("COMMIT");
 
-    // 🔹 Exportar logs UNA VEZ
-    await exportarLogsGoogle(spams[0].IdCamp);
+    // Exportar logs UNA VEZ
+    await exportarLogsGoogle(spams[0].id_camp);
 
     res.json({
       status: true,
@@ -809,7 +834,7 @@ router.post("/reemplazar-spam-bulk", async (req, res) => {
 
   } catch (err) {
 
-    await conn.rollback();
+    await conn.query("ROLLBACK");
     console.error(err);
 
     res.status(500).json({

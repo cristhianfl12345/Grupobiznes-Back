@@ -121,7 +121,7 @@ const updateUsuarioService = async (id, body) => {
 
       if (campanas.length > 0) {
 
-        // 🔥 INSERT MASIVO DINÁMICO (PostgreSQL)
+        // INSERT MASIVO DINÁMICO (PostgreSQL)
         const values = campanas.map(c => [id, Number(c)]);
         const flatValues = values.flat();
 

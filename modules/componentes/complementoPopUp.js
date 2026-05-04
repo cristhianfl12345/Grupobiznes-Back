@@ -1,6 +1,6 @@
 //back/modules/componentes/complementoPopUp.js
 
-import db from "../../config/dbmsql.js";
+import { db } from "../../config/db.js";
 
 // ==============================
 // QUERIES
@@ -12,28 +12,29 @@ SELECT
     n.id_usuario,
     u.nombres,
     u.apellidos,
+    n.id_camp AS id_camp,  
     COUNT(*) AS total_envios
-FROM bz_notificaciones n
-INNER JOIN biznes_dbaplicacion.ra_usuarios u 
+FROM admin.notificaciones_marcadores n
+INNER JOIN admin.ra_usuarios u 
     ON u.id = n.id_usuario
 WHERE 
     DATE(n.fecha_consulta) = CURRENT_DATE
-GROUP BY n.id_usuario, u.nombres, u.apellidos
+GROUP BY n.id_usuario, u.nombres, u.apellidos, n.id_camp
 ORDER BY total_envios DESC
 `;
 
 // Detalle por usuario (historial)
 const QUERY_NOTIFICACIONES_DETALLE = `
 SELECT 
-    c.Campana,
+    c.nombre AS "Campana",
     n.telefono,
     n.fecha_consulta,
     n.id_marcador
-FROM bz_notificaciones n
-INNER JOIN biznes_dbdashboard.bz_campanas c 
-    ON c.IdCamp = n.IdCamp
+FROM admin.notificaciones_marcadores n
+INNER JOIN admin.campanas c 
+    ON c.id_camp = n.id_camp
 WHERE 
-    n.id_usuario = ?
+    n.id_usuario = $1
     AND DATE(n.fecha_consulta) = CURRENT_DATE
 ORDER BY n.fecha_consulta DESC
 `;
@@ -41,8 +42,8 @@ ORDER BY n.fecha_consulta DESC
 // Validar tipo de usuario (seguridad backend)
 const QUERY_VALIDAR_ROL = `
 SELECT id, id_tipo_usuario
-FROM biznes_dbaplicacion.ra_usuarios
-WHERE id = ?
+FROM admin.ra_usuarios
+WHERE id = $1
 `;
 
 // ==============================
@@ -50,19 +51,20 @@ WHERE id = ?
 // ==============================
 
 const obtenerNotificacionesAgrupadas = async () => {
-  const [rows] = await db.query(QUERY_NOTIFICACIONES_AGRUPADAS);
+  const { rows } = await db.query(QUERY_NOTIFICACIONES_AGRUPADAS);
 
   return rows.map(r => ({
     id_usuario: r.id_usuario,
     nombres: r.nombres,
     apellidos: r.apellidos,
     total: r.total_envios,
+    id_camp: r.id_camp,
     mensaje: `${r.nombres} ${r.apellidos} ha enviado ${r.total_envios} números a SPAM hoy`
   }));
 };
 
 const obtenerDetalleUsuario = async (idUsuario) => {
-  const [rows] = await db.query(QUERY_NOTIFICACIONES_DETALLE, [idUsuario]);
+  const { rows } = await db.query(QUERY_NOTIFICACIONES_DETALLE, [idUsuario]);
 
   return rows.map(r => ({
     campana: r.Campana,
@@ -73,7 +75,7 @@ const obtenerDetalleUsuario = async (idUsuario) => {
 };
 
 const validarPermiso = async (idUsuario) => {
-  const [rows] = await db.query(QUERY_VALIDAR_ROL, [idUsuario]);
+  const { rows } = await db.query(QUERY_VALIDAR_ROL, [idUsuario]);
 
   if (!rows.length) return false;
 
@@ -90,7 +92,7 @@ const validarPermiso = async (idUsuario) => {
 // GET /notificaciones-sistemas/obtener
 export const obtenerNotificaciones = async (req, res) => {
   try {
-    const idUsuario = req.user?.id; // asumimos middleware de sesión
+    const idUsuario = req.user?.id;
 
     if (!idUsuario) {
       return res.status(401).json({ ok: false, msg: "No autenticado" });
@@ -115,7 +117,7 @@ export const obtenerNotificaciones = async (req, res) => {
   }
 };
 
-//  GET /notificaciones-sistemas/detalle/:idUsuario
+// GET /notificaciones-sistemas/detalle/:idUsuario
 export const obtenerDetalleNotificacion = async (req, res) => {
   try {
     const idUsuarioSesion = req.user?.id;
@@ -146,9 +148,7 @@ export const obtenerDetalleNotificacion = async (req, res) => {
     console.error("ERROR DETALLE NOTIFICACIONES:", error);
     return res.status(500).json({ ok: false });
   }
-  
 };
-// notificaciones de supervisor
 
 // ==============================
 // NOTIFICACIONES SUPERVISOR
@@ -160,36 +160,33 @@ SELECT
     n.id_camp,
     n.fecha_registro,
     n.leido_por,
-    c.Campana
-FROM notificaciones n
-INNER JOIN bz_campanas c 
-    ON c.IdCamp = n.id_camp
-
-INNER JOIN biznes_dbaplicacion.ra_usuario_camp uc 
+    c.nombre AS "Campana"
+FROM admin.notificaciones_marcadores n
+INNER JOIN admin.campanas c 
+    ON c.id_camp = n.id_camp
+INNER JOIN admin.ra_usuario_camp uc 
     ON uc.id_camp = n.id_camp
-
-INNER JOIN biznes_dbaplicacion.ra_usuarios u
+INNER JOIN admin.ra_usuarios u
     ON u.id = uc.id_usuario
-
 WHERE 
-    uc.id_usuario = ?
+    uc.id_usuario = $1
     AND u.id_tipo_usuario IN (3,4,5)
-
 ORDER BY n.fecha_registro DESC
 LIMIT 20
 `;
 
 const QUERY_MARCAR_LEIDA = `
-UPDATE notificaciones
-SET leido_por = ?
-WHERE id = ?
+UPDATE admin.notificaciones_marcadores
+SET leido_por = $1
+WHERE id = $2
 `;
+
 // ==============================
 // SERVICE SUPERVISOR
 // ==============================
 
 const obtenerNotificacionesUsuario = async (idUsuario) => {
-  const [rows] = await db.query(QUERY_NOTIFICACIONES_USUARIO, [idUsuario]);
+  const { rows } = await db.query(QUERY_NOTIFICACIONES_USUARIO, [idUsuario]);
 
   return rows.map(r => ({
     id: r.id,
@@ -203,13 +200,12 @@ const obtenerNotificacionesUsuario = async (idUsuario) => {
 
 const marcarNotificacionLeida = async (idNotificacion, idUsuario) => {
   await db.query(QUERY_MARCAR_LEIDA, [idUsuario, idNotificacion]);
-
   return true;
 };
 
 const validarPermisoSupervisor = async (idUsuario) => {
-  const [rows] = await db.query(
-    `SELECT id_tipo_usuario FROM biznes_dbaplicacion.ra_usuarios WHERE id = ?`,
+  const { rows } = await db.query(
+    `SELECT id_tipo_usuario FROM admin.ra_usuarios WHERE id = $1`,
     [idUsuario]
   );
 
@@ -217,6 +213,7 @@ const validarPermisoSupervisor = async (idUsuario) => {
 
   return ["3", "4", "5"].includes(String(rows[0].id_tipo_usuario));
 };
+
 // GET /notificaciones-supervisor/obtener
 export const obtenerNotificacionesSupervisor = async (req, res) => {
   try {
@@ -244,6 +241,7 @@ export const obtenerNotificacionesSupervisor = async (req, res) => {
     return res.status(500).json({ ok: false });
   }
 };
+
 // POST /notificaciones-supervisor/marcar-leida
 export const marcarLeidaSupervisor = async (req, res) => {
   try {
