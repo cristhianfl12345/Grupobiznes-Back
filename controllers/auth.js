@@ -12,6 +12,7 @@ const JWT_EXPIRES = "8h";
 /**
  * LOGIN
  */
+
 router.post("/login", async (req, res) => {
   try {
     const { usuario, password } = req.body;
@@ -77,9 +78,9 @@ router.post("/login", async (req, res) => {
       validPassword = sha1 === dbPassword;
     }
     // texto plano
-    else {
+   {/* else {
       validPassword = password === dbPassword;
-    }
+    }  */}
 
     {/*DEBUG
     console.log("INPUT:", password);
@@ -264,5 +265,4 @@ router.get("/mis-campanas/:idUsuario", async (req, res) => {
     });
   }
 });
-
 export default router;

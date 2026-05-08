@@ -117,7 +117,6 @@ export const obtenerNotificaciones = async (req, res) => {
   }
 };
 
-// GET /notificaciones-sistemas/detalle/:idUsuario
 export const obtenerDetalleNotificacion = async (req, res) => {
   try {
     const idUsuarioSesion = req.user?.id;
