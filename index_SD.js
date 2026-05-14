@@ -15,6 +15,8 @@ import leadsRoutes from './modules/leads/leads.routes.js'
 import controlModulosRoutes from "./modules/controlModulos/controlM.controller.js";
 import moduloBasesRouter from "./modules/mBases/moduloBases.js";
 import { buscarLeadsController } from "./modules/busqueda/busqueda.model.js"
+import {getControlSupervisorController } from "./modules/controlSupervisor/controlS.controller.js"
+import landingInternoRoutes from "./modules/landingInterno/landing.routes.js"
 import http from "http";
 import { initNotiSocket } from "./modules/componentes/notiSocket.js";
 import swaggerUi from "swagger-ui-express";
@@ -51,6 +53,8 @@ app.post("/api/notificaciones-supervisor/marcar-leida", verifyToken, marcarLeida
 app.post("/api/usuarios",  createUsuario);
 //busqueda
 app.get("/api/busqueda", buscarLeadsController);
+app.get("/api/control-supervisor", getControlSupervisorController);
+app.use("/api/landing-interno", landingInternoRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const PORT = 4000
 

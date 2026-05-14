@@ -1,3 +1,4 @@
+//back/config/dbdigital.js
 import pkg from 'pg'
 const { Pool } = pkg
 

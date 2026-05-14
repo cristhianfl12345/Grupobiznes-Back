@@ -107,10 +107,12 @@ WHERE
     AND l.FechaIngreso::date = $2::date
 `
 export const QUERY_SUBCAMPANIAS = `
-  SELECT "IniCampania"
+  SELECT 
+    ini_campania AS "IniCampania",
+    id_camp AS "Idcamp"
   FROM core.campanas_ini
-  WHERE "Idcamp" = $1
-  ORDER BY "IniCampania"
+  WHERE id_camp = $1
+  ORDER BY ini_campania
 `;
 export const QUERY_LEADS_PANEL = `
 SELECT 
@@ -169,3 +171,4 @@ WHERE
     AND v.activo = true
 ORDER BY v."Id_vista"
 `;
+

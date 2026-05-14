@@ -1,6 +1,4 @@
 //back/modules/controlSupervisor/controlS.service.js
-//back/modules/controlSupervisor/controlS.service.js
-
 import { getControlSupervisor } from "./controlS.queries.js";
 
 /**
