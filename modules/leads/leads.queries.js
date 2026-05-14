@@ -18,7 +18,7 @@ SELECT
 
     COALESCE(lc.idcampania, 0) AS idcampania,
     COALESCE(lc.formid, '0') AS formid,
-    COALESCE(lc.id_anuncio, 0) AS id_anuncio,
+    COALESCE(lc.id_anuncio, '0') AS id_anuncio,
     COALESCE(lc.desc_form, '0') AS NameForm,
 
     EXTRACT(HOUR FROM lc.fecha_creacion) AS horac,
