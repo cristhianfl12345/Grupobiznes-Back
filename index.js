@@ -19,6 +19,10 @@ import {getControlSupervisorController } from "./modules/controlSupervisor/contr
 import landingInternoRoutes from "./modules/landingInterno/landing.routes.js"
 import http from "http";
 import { initNotiSocket } from "./modules/componentes/notiSocket.js";
+import userCRoutes from "./modules/creacionUsuarios/userC.routes.js";
+import agenteAddRoutes from "./modules/agregarAgente/agenteAdd.routes.js"
+import agenteInfoRoutes from "./modules/agenteInfo/agenteInfo.routes.js"
+import crearCampRoutes from "./modules/creacionCampana/crearCamp.routes.js"
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger/swagger.js";
 
@@ -26,7 +30,7 @@ import swaggerSpec from "./swagger/swagger.js";
 const app = express()
 app.use(cors())
 app.use(express.json())
-app.use("/api", controlModulosRoutes)
+app.use("/api", controlModulosRoutes) //internamente ya tiene el verifytoken
 
 /**
  * @swagger
@@ -242,7 +246,7 @@ app.use("/api", controlModulosRoutes)
  */
 
 
-app.use("/api/modulo-bases", moduloBasesRouter)
+app.use("/api/modulo-bases", verifyToken, moduloBasesRouter)
 /**
  * @swagger
  * /api/modulo-bases:
@@ -299,7 +303,7 @@ app.use("/api/modulo-bases", moduloBasesRouter)
  *                         type: string
  *                         format: date-time
  */
-app.use("/api", marcadoresControl) //verificar con token , exposicion de marcadores y telefonos
+app.use("/api",  marcadoresControl) //verificar con token , exposicion de marcadores y telefonos
 
 /**
  * @swagger
@@ -840,13 +844,13 @@ app.use("/api/auth", authController)
  *                   example: Error interno
  */
 app.get("/api/vistas", getVistas)
-app.post("/api/vistasss", crearVista); //
-app.get("/api/campanas-select", getCampanasSelect); // verificar con token sino campañas expuestas
+app.post("/api/vistasss", verifyToken, crearVista); //
+app.get("/api/campanas-select", verifyToken, getCampanasSelect); // verificar con token sino campañas expuestas
 
 /**
  * @swagger
  * /api/campanas:
- *   get:
+ *   get: 
  *     summary: Obtener listado de campañas
  *     description: |
  *       Retorna todas las campañas disponibles para selección (select).
@@ -892,7 +896,7 @@ app.get("/api/campanas-select", getCampanasSelect); // verificar con token sino 
  *                   example: Error obteniendo campañas
  */
 
-app.get("/api/vistas-filtradas", getVistasFiltradas); // verificar con token y usar el token de sesion en el front, sino frames expuestos
+app.get("/api/vistas-filtradas", verifyToken, getVistasFiltradas); // verificar con token y usar el token de sesion en el front, sino frames expuestos
 /**
  * @swagger
  * /api/vistas-filtradas:
@@ -951,7 +955,7 @@ app.get("/api/vistas-filtradas", getVistasFiltradas); // verificar con token y u
  *       500:
  *         description: Error interno
  */
-app.get("/api/vistas-filtradas/:id", getVistaById); // verificar con token y usar el token de sesion en el front, sino frames expuestos
+app.get("/api/vistas-filtradas/:id", verifyToken, getVistaById); // verificar con token y usar el token de sesion en el front, sino frames expuestos
 /**
  * @swagger
  * /api/vistas-filtradas/{id}:
@@ -1001,7 +1005,7 @@ app.get("/api/vistas-filtradas/:id", getVistaById); // verificar con token y usa
  *       500:
  *         description: Error interno
  */
-app.put("/api/vistas-filtradas/:id", updateVista); // verificar con token y usar el token de sesion en el front, sino frames expuestos
+app.put("/api/vistas-filtradas/:id", verifyToken, updateVista); // verificar con token y usar el token de sesion en el front, sino frames expuestos
 /**
  * @swagger
  * /api/vistas-filtradas/{id}:
@@ -1059,7 +1063,7 @@ app.put("/api/vistas-filtradas/:id", updateVista); // verificar con token y usar
  *       500:
  *         description: Error interno
  */
-app.get("/api/usuarios-get", obtenerUsuarios) //verificar con token y usar el token de sesion en el front
+app.get("/api/usuarios-get", verifyToken, obtenerUsuarios) //verificar con token y usar el token de sesion en el front
 
 /**
  * @swagger
@@ -1221,7 +1225,7 @@ app.get("/api/kpis", verifyToken, getKpis)
  *                   example: Error al obtener KPIs
  */
 
-app.put("/api/usuarios/:id", updateUsuario);
+app.put("/api/usuarios/:id", verifyToken, updateUsuario);
 /**
  * @swagger
  * /api/usuarios/{id}:
@@ -1287,7 +1291,7 @@ app.put("/api/usuarios/:id", updateUsuario);
  *       500:
  *         description: Error interno
  */
-app.delete("/api/usuarios/:id", deleteUsuario);
+app.delete("/api/usuarios/:id", verifyToken, deleteUsuario);
 /**
  * @swagger
  * /api/usuarios/{id}:
@@ -1492,16 +1496,114 @@ app.get("/api/notificaciones-sistemas/detalle/:idUsuario", verifyToken, obtenerD
  *                   example: false
  */
 app.get("/api/notificaciones-supervisor/obtener", verifyToken, obtenerNotificacionesSupervisor);
+/**
+ * @swagger
+ * /api/notificaciones-supervisor/obtener:
+ *   get:
+ *     summary: Obtener notificaciones del supervisor
+ *     description: |
+ *       Retorna las notificaciones visibles para el supervisor autenticado.
+ *       Solo incluye notificaciones asociadas al usuario según permisos.
+ *     tags: [Notificaciones Supervisor]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Notificaciones obtenidas correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         example: 15
+ *                       mensaje:
+ *                         type: string
+ *                         example: Se ha enviado un lead a la campaña 90
+ *                       fecha:
+ *                         type: string
+ *                         format: date-time
+ *                         example: 2026-05-23T10:32:12.000Z
+ *                       leida:
+ *                         type: boolean
+ *                         example: false
+ *       401:
+ *         description: Token inválido o no enviado
+ *       403:
+ *         description: Sin permisos
+ *       500:
+ *         description: Error interno
+ */
 app.post("/api/notificaciones-supervisor/marcar-leida", verifyToken, marcarLeidaSupervisor);
-app.post("/api/usuarios",  createUsuario);
+/**
+ * @swagger
+ * /api/notificaciones-supervisor/marcar-leida:
+ *   post:
+ *     summary: Marcar notificación como leída
+ *     description: |
+ *       Marca una notificación del supervisor como leída.
+ *     tags: [Notificaciones Supervisor]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idNotificacion
+ *             properties:
+ *               idNotificacion:
+ *                 type: integer
+ *                 example: 15
+ *     responses:
+ *       200:
+ *         description: Notificación marcada como leída correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Notificación marcada como leída
+ *       400:
+ *         description: Datos inválidos
+ *       401:
+ *         description: Token inválido o no enviado
+ *       403:
+ *         description: Sin permisos
+ *       500:
+ *         description: Error interno
+ */
+app.post("/api/usuarios", verifyToken, createUsuario);
 //busqueda
-app.get("/api/busqueda", buscarLeadsController);
+app.get("/api/busqueda", verifyToken, buscarLeadsController);
 //landing interno
-app.use("/api/landing-interno", landingInternoRoutes);
+app.use("/api/landing-interno", verifyToken, landingInternoRoutes);
 //control supervisor
 
-app.get("/api/control-supervisor", getControlSupervisorController);
-
+app.get("/api/control-supervisor", verifyToken, getControlSupervisorController);
+// registrar agente
+app.use("/api", userCRoutes);
+// agregar agente a campaña
+app.use("/api/agentes", verifyToken, agenteAddRoutes)
+// agenteInfo
+app.use("/api/agente-info", verifyToken, agenteInfoRoutes);
+app.use("/api/crear-campanas", verifyToken, crearCampRoutes);
 /**
  * @swagger
  * /api/busqueda:

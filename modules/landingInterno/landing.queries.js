@@ -5,41 +5,27 @@
 
 export const INSERT_LEAD_CAMPANIA = `
   INSERT INTO core.leads_campania (
-
-    -- CLIENTE
     nombre_completo,
     dni,
     numero_telefono,
     email,
     provincia,
     comentario,
-
-    -- CAMPAÑA
     inicampania,
     campania,
     producto,
-
-    -- BASE
     id_tipobase,
-
-    -- USUARIO
     idusuario,
-
-    -- FLAGS
     permitellamada,
     politica,
-
-    -- ESTATICOS
+    -- valores predefinidos
     origen,
     plataforma,
     alias,
-
-    -- IDS
+    --
     idcampania,
     idkeyunico,
     id_anuncio,
-
-    -- FECHAS
     fcreacion,
     fecha_creacion,
     fecha_liquidacion

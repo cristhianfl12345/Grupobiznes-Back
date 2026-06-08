@@ -1,11 +1,18 @@
 import { dbdigital } from '../../config/dbdigital.js'
-import { db } from '../../config/db.js'
+import { db } from '../../config/db.js' //PANEL
 
 import {
   QUERY_LEADS_BASE,
   QUERY_SUBCAMPANIAS,
   QUERY_LEADS_PANEL,
-  QUERY_VISTAS_CAMPANA
+  QUERY_VISTAS_CAMPANA,
+  QUERY_GET_AGENTES_CAMPANA,
+  QUERY_MASIVOS_CARTERIZADO,
+  QUERY_CARTERIZAR_INDIVIDUAL,
+  QUERY_GET_LEADS_ASIGNADOS,
+  QUERY_GET_USUARIOS_POR_IDS,
+  QUERY_UPDATE_USUARIO_CARTERIZADO
+
 } from './leads.queries.js'
 
 
@@ -65,6 +72,16 @@ export const getVistasCampanaService = async (idCamp) => {
 }
 
 
+export const getAgentesCampanaService = async (idCamp) => {
+
+  const { rows } = await db.query(
+    QUERY_GET_AGENTES_CAMPANA,
+    [idCamp]
+  )
+
+  return rows
+}
+
 // NUEVO: FILTRAR COLUMNAS SEGÚN VISTAS
 export const getLeadsFiltradosService = async (idCamp, iniCampania, fechaIngreso) => {
 
@@ -103,3 +120,97 @@ export const getLeadsFiltradosService = async (idCamp, iniCampania, fechaIngreso
 
   return resultado
 }
+export const getMasivosCarterizadoService = async (
+  idCamp,
+  idPlataforma
+) => {
+
+  const { rows } = await db.query(
+    QUERY_MASIVOS_CARTERIZADO,
+    [idCamp, idPlataforma]
+  )
+
+  return rows
+}
+export const carterizarIndividualService = async (
+  idLead,
+  idCamp,
+  idUsuario
+) => {
+
+  const { rows } = await dbdigital.query(
+    QUERY_CARTERIZAR_INDIVIDUAL,
+    [
+      idLead,
+      idCamp,
+      idUsuario
+    ]
+  )
+
+  return rows[0]
+
+}
+
+
+export const getLeadsConAgentesService = async (
+  idCamp
+) => {
+
+  const { rows: asignaciones } =
+    await dbdigital.query(
+      QUERY_GET_LEADS_ASIGNADOS,
+      [idCamp]
+    )
+
+  if (!asignaciones.length) {
+    return []
+  }
+
+  const idsUsuarios = [
+    ...new Set(
+      asignaciones.map(
+        a => a.id_usuario
+      )
+    )
+  ]
+
+  const { rows: usuarios } =
+    await db.query(
+      QUERY_GET_USUARIOS_POR_IDS,
+      [idsUsuarios]
+    )
+
+  const usuariosMap = {}
+
+  usuarios.forEach(usuario => {
+
+    usuariosMap[
+      usuario.id_usuario
+    ] = usuario.nombre
+
+  })
+
+  return asignaciones.map(a => ({
+    idlead: a.id_leads,
+    id_usuario: a.id_usuario,
+    nombre_agente_asignado:
+      usuariosMap[a.id_usuario] || null
+  }))
+
+}
+export const updateLeadAsignadoService = async (
+  idLead,
+  idUsuario
+) => {
+
+  const { rows } = await dbdigital.query(
+    QUERY_UPDATE_USUARIO_CARTERIZADO,
+    [
+      idUsuario,
+      idLead
+    ]
+  );
+
+  return rows[0] || null;
+
+};

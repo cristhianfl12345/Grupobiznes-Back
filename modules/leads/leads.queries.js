@@ -1,5 +1,6 @@
 export const QUERY_LEADS_BASE = `
 SELECT 
+idlead,
     lc.idkey AS "IdKey_Computado",
     lc.idkey,
 
@@ -171,4 +172,73 @@ WHERE
     AND v.activo = true
 ORDER BY v."Id_vista"
 `;
+export const QUERY_GET_AGENTES_CAMPANA = `
+SELECT 
+    uc.id_campana,
+    uc.id_usuario,
+    u.nombre
+FROM agent.usuarios_carterizacion uc
+INNER JOIN agent.usuarios u
+    ON u.id_usuario = uc.id_usuario
+WHERE uc.id_campana = $1; `;
 
+export const QUERY_MASIVOS_CARTERIZADO = `
+SELECT 
+    uc.id_campana,
+    uc.id_usuario,
+    u.nombre,
+    up.id_plataforma
+
+FROM agent.usuarios_carterizacion uc
+
+INNER JOIN agent.usuarios u
+    ON u.id_usuario = uc.id_usuario
+
+INNER JOIN agent.usuarios_plataformas up
+    ON up.id_usuario = uc.id_usuario
+
+WHERE 
+    uc.id_campana = $1
+    AND up.id_plataforma = $2
+
+ORDER BY u.nombre ASC;
+`
+export const QUERY_CARTERIZAR_INDIVIDUAL = `
+INSERT INTO assignment.leads_asignados (
+    id_leads,
+    id_camp,
+    id_usuario,
+    fecha_reg
+)
+VALUES (
+    $1,
+    $2,
+    $3,
+    NOW()
+)
+RETURNING *
+`;
+export const QUERY_GET_LEADS_ASIGNADOS = `
+SELECT
+    id_leads,
+    id_usuario
+FROM assignment.leads_asignados
+WHERE id_camp = $1
+`;
+export const QUERY_GET_USUARIOS_POR_IDS = `
+SELECT
+    id_usuario,
+    nombre
+FROM agent.usuarios
+WHERE id_usuario = ANY($1)
+`;
+
+export const QUERY_UPDATE_USUARIO_CARTERIZADO = `
+UPDATE assignment.leads_asignados
+SET
+    id_usuario = $1,
+    fecha_actualizacion = NOW()
+WHERE id_leads = $2
+  AND id_usuario <> $1
+RETURNING *
+`;

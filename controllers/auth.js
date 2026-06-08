@@ -78,15 +78,15 @@ router.post("/login", async (req, res) => {
       validPassword = sha1 === dbPassword;
     }
     // texto plano
-   {/* else {
+  /* else {
       validPassword = password === dbPassword;
-    }  */}
+    }  */
 
-    {/*DEBUG
+    /*DEBUG
     console.log("INPUT:", password);
     console.log("DB:", dbPassword);
     console.log("VALID:", validPassword);
-    */}
+    */
     if (!validPassword) {
       return res.status(401).json({
         ok: false,
@@ -190,7 +190,7 @@ router.get("/profile", verifyToken, async (req, res) => {
 /**
  * CAMPAÑAS
  */
-router.get("/mis-campanas/:idUsuario", async (req, res) => {
+router.get("/mis-campanas/:idUsuario", verifyToken, async (req, res) => {
   try {
     const { idUsuario } = req.params;
 
