@@ -1,12 +1,14 @@
-//back/config/dbmaster.js
+// back/config/dbmaster.js
+
 import sql from "mssql";
 
 const baseConfig = {
-  user: 'pth_reniec',
-  password: 'rni258[]43$',
-  server: '192.168.7.30',
+  user: process.env.MSSQL_USER,
+  password: process.env.MSSQL_PASSWORD,
+  server: process.env.MSSQL_HOST,
+  port: Number(process.env.MSSQL_PORT),
   options: {
-    encrypt: false, // true en azure
+    encrypt: false,
     trustServerCertificate: true
   },
   pool: {
@@ -21,7 +23,7 @@ const baseConfig = {
 // =========================
 const configMaster = {
   ...baseConfig,
-  database: 'DB_MASTER_BIZNES'
+  database: process.env.MSSQL_DB_MASTER
 };
 
 // =========================
@@ -29,7 +31,7 @@ const configMaster = {
 // =========================
 const configRNI = {
   ...baseConfig,
-  database: 'DB_RNI'
+  database: process.env.MSSQL_DB_RNI
 };
 
 // =========================
@@ -37,7 +39,7 @@ const configRNI = {
 // =========================
 const configRCC = {
   ...baseConfig,
-  database: 'DB_RCC'
+  database: process.env.MSSQL_DB_RCC
 };
 
 // =========================
@@ -46,11 +48,14 @@ const configRCC = {
 export const poolMaster = new sql.ConnectionPool(configMaster)
   .connect()
   .then(pool => {
-    // console.log("Conectado a DB_MASTER_BIZNES");
+    // console.log(`Conectado a ${process.env.MSSQL_DB_MASTER}`);
     return pool;
   })
   .catch(err => {
-    console.error("Error conexión DB_MASTER_BIZNES:", err);
+    console.error(
+      `Error conexión ${process.env.MSSQL_DB_MASTER}:`,
+      err
+    );
     throw err;
   });
 
@@ -60,11 +65,14 @@ export const poolMaster = new sql.ConnectionPool(configMaster)
 export const poolRNI = new sql.ConnectionPool(configRNI)
   .connect()
   .then(pool => {
-    // console.log("Conectado a DB_RNI");
+    // console.log(`Conectado a ${process.env.MSSQL_DB_RNI}`);
     return pool;
   })
   .catch(err => {
-    console.error("Error conexión DB_RNI:", err);
+    console.error(
+      `Error conexión ${process.env.MSSQL_DB_RNI}:`,
+      err
+    );
     throw err;
   });
 
@@ -74,11 +82,14 @@ export const poolRNI = new sql.ConnectionPool(configRNI)
 export const poolRCC = new sql.ConnectionPool(configRCC)
   .connect()
   .then(pool => {
-    // console.log("Conectado a DB_RCC");
+    // console.log(`Conectado a ${process.env.MSSQL_DB_RCC}`);
     return pool;
   })
   .catch(err => {
-    console.error("Error conexión DB_RCC:", err);
+    console.error(
+      `Error conexión ${process.env.MSSQL_DB_RCC}:`,
+      err
+    );
     throw err;
   });
 

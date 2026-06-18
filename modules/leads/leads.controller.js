@@ -7,6 +7,8 @@ import { getMasivosCarterizadoService } from './leads.service.js'
 import { carterizarIndividualService } from './leads.service.js'
 import { getLeadsConAgentesService } from './leads.service.js'
 import { updateLeadAsignadoService } from './leads.service.js'
+import { getLeadsDisponiblesService } from './leads.service.js'
+import { asignarLeadsMasivamenteService } from './leads.service.js'
 
 export const getLeadsByFechaController = async (req, res) => {
   try {
@@ -321,4 +323,113 @@ export const getLeadsConAgentesController =
 
   }
 
+};
+
+export const getLeadsDisponiblesController = async (req, res) => {
+  try {
+    const {
+      fechaInicio,
+      fechaFin,
+      idCamp
+    } = req.query;
+
+    if (!fechaInicio || !fechaFin || !idCamp) {
+      return res.status(400).json({
+        ok: false,
+        message: "fechaInicio, fechaFin e idCamp son requeridos"
+      });
+    }
+
+    const leads = await getLeadsDisponiblesService(
+      fechaInicio,
+      fechaFin,
+      Number(idCamp)
+    );
+
+    return res.status(200).json({
+      ok: true,
+      total: leads.length,
+      data: leads
+    });
+
+  } catch (error) {
+    console.error("Error obteniendo leads disponibles:", error);
+
+    return res.status(500).json({
+      ok: false,
+      message: "Error interno del servidor"
+    });
+  }
+};
+// asignacion
+
+export const asignarLeadsMasivamenteController = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const {
+      fechaInicio,
+      fechaFin,
+      idCamp,
+      usuarios
+    } = req.body;
+
+    if (!fechaInicio) {
+      return res.status(400).json({
+        ok: false,
+        message: "fechaInicio es requerida"
+      });
+    }
+
+    if (!fechaFin) {
+      return res.status(400).json({
+        ok: false,
+        message: "fechaFin es requerida"
+      });
+    }
+
+    if (!idCamp) {
+      return res.status(400).json({
+        ok: false,
+        message: "idCamp es requerido"
+      });
+    }
+
+    if (!Array.isArray(usuarios) || usuarios.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "Debe enviar al menos un usuario"
+      });
+    }
+
+    const resultado =
+      await asignarLeadsMasivamenteService(
+        fechaInicio,
+        fechaFin,
+        Number(idCamp),
+        usuarios.map(Number)
+      );
+
+    return res.status(200).json({
+      ok: true,
+      message: "Leads asignados correctamente",
+      ...resultado
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Error asignando leads masivamente:",
+      error
+    );
+
+    return res.status(500).json({
+      ok: false,
+      message: error.message || "Error interno del servidor"
+    });
+
+  }
 };

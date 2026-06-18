@@ -11,7 +11,9 @@ import {
   QUERY_CARTERIZAR_INDIVIDUAL,
   QUERY_GET_LEADS_ASIGNADOS,
   QUERY_GET_USUARIOS_POR_IDS,
-  QUERY_UPDATE_USUARIO_CARTERIZADO
+  QUERY_UPDATE_USUARIO_CARTERIZADO,
+  QUERY_GET_LEADS_DISPONIBLES,
+  QUERY_ASIGNAR_LEAD
 
 } from './leads.queries.js'
 
@@ -213,4 +215,99 @@ export const updateLeadAsignadoService = async (
 
   return rows[0] || null;
 
+};
+export const getLeadsDisponiblesService = async (
+  fechaInicio,
+  fechaFin,
+  idCamp
+) => {
+  const result = await dbdigital.query(
+    QUERY_GET_LEADS_DISPONIBLES,
+    [
+      fechaInicio,
+      fechaFin,
+      idCamp
+    ]
+  );
+
+  return result.rows;
+};
+export const asignarLeadsMasivamenteService = async (
+  fechaInicio,
+  fechaFin,
+  idCamp,
+  usuarios
+) => {
+
+  const client = await dbdigital.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+    const leadsResult = await client.query(
+      QUERY_GET_LEADS_DISPONIBLES,
+      [
+        fechaInicio,
+        fechaFin,
+        idCamp
+      ]
+    );
+
+    const leads = leadsResult.rows;
+
+    if (!leads.length) {
+      await client.query("ROLLBACK");
+
+      return {
+        totalLeads: 0,
+        asignaciones: []
+      };
+    }
+
+    if (!usuarios || !usuarios.length) {
+      throw new Error("No se enviaron usuarios para asignar");
+    }
+
+    const asignaciones = [];
+
+    for (let i = 0; i < leads.length; i++) {
+
+      const idLead = leads[i].id_leads;
+
+      const idUsuario = usuarios[i % usuarios.length];
+
+      await client.query(
+        QUERY_ASIGNAR_LEAD,
+        [
+          idUsuario,
+          idLead
+        ]
+      );
+
+      asignaciones.push({
+        idLead,
+        idUsuario
+      });
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      totalLeads: leads.length,
+      totalUsuarios: usuarios.length,
+      asignaciones
+    };
+
+  } catch (error) {
+
+    await client.query("ROLLBACK");
+
+    throw error;
+
+  } finally {
+
+    client.release();
+
+  }
 };

@@ -87,7 +87,8 @@ idlead,
     g.lista_criticos,
 
     '' AS "semaforoTipoLead",
-    lc."origennegociointegracion"
+    lc."origennegociointegracion",
+    lc."negocio"
 
 FROM core.leads l
 
@@ -162,7 +163,9 @@ export const QUERY_VISTAS_CAMPANA = `
 SELECT 
     v.query_vista,
     v."Vista",
-    v.activo
+    v.activo,
+    v.orden,
+    v.nivel_vista
 FROM admin.campanas c
 INNER JOIN admin.vistas v
     ON c.id_vista = v."Id_vista"
@@ -170,7 +173,8 @@ WHERE
     c.id_camp = $1
     AND c.activa = true
     AND v.activo = true
-ORDER BY v."Id_vista"
+    
+ORDER BY orden ASC
 `;
 export const QUERY_GET_AGENTES_CAMPANA = `
 SELECT 
@@ -208,13 +212,15 @@ INSERT INTO assignment.leads_asignados (
     id_leads,
     id_camp,
     id_usuario,
-    fecha_reg
+    fecha_reg,
+    status_asignado
 )
 VALUES (
     $1,
     $2,
     $3,
-    NOW()
+    NOW(),
+    1
 )
 RETURNING *
 `;
@@ -237,8 +243,26 @@ export const QUERY_UPDATE_USUARIO_CARTERIZADO = `
 UPDATE assignment.leads_asignados
 SET
     id_usuario = $1,
-    fecha_actualizacion = NOW()
+    fecha_actualizacion = NOW(),
+    status_asignado = 1
 WHERE id_leads = $2
-  AND id_usuario <> $1
+  AND id_usuario IS DISTINCT FROM $1
 RETURNING *
+`;
+export const QUERY_GET_LEADS_DISPONIBLES = `
+SELECT
+    id_leads
+FROM assignment.leads_asignados
+WHERE fecha_reg BETWEEN $1 AND $2
+  AND id_camp = $3
+  AND id_usuario IS NULL
+  AND COALESCE(status_asignado, 0) = 0
+ORDER BY fecha_reg, id_leads
+`;
+export const QUERY_ASIGNAR_LEAD = `
+UPDATE assignment.leads_asignados
+SET
+    id_usuario = $1,
+    status_asignado = 1
+WHERE id_leads = $2
 `;

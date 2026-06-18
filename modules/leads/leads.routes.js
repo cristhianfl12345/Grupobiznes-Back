@@ -7,6 +7,8 @@ import { getMasivosCarterizadoController } from './leads.controller.js'
 import { carterizarIndividualController } from './leads.controller.js'
 import { getLeadsConAgentesController } from './leads.controller.js'
 import { updateLeadAsignadoController } from './leads.controller.js'
+import { getLeadsDisponiblesController } from './leads.controller.js'
+import { asignarLeadsMasivamenteController } from './leads.controller.js'
 const router = Router()
 
 router.get('/', getLeadsByFechaController)
@@ -39,4 +41,12 @@ router.get(
 router.put(
   "/reasignar-lead",
   updateLeadAsignadoController
+);
+router.get(
+  "/leads-por-fecha",
+  getLeadsDisponiblesController
+);
+router.post(
+  "/asignar-leads",
+  asignarLeadsMasivamenteController
 );

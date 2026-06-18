@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import express from "express"
 import cors from "cors"
 import marcadoresControl from "./controllers/marcadoresControl.js"
@@ -23,8 +24,12 @@ import userCRoutes from "./modules/creacionUsuarios/userC.routes.js";
 import agenteAddRoutes from "./modules/agregarAgente/agenteAdd.routes.js"
 import agenteInfoRoutes from "./modules/agenteInfo/agenteInfo.routes.js"
 import crearCampRoutes from "./modules/creacionCampana/crearCamp.routes.js"
+import registroRoutes from "./modules/DescargaRegistro/registro.service.js";
+import controlVistasRoutes from "./modules/controlVistas/controlVistas.routes.js";
+
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger/swagger.js";
+
 
 
 const app = express()
@@ -1595,7 +1600,6 @@ app.get("/api/busqueda", verifyToken, buscarLeadsController);
 //landing interno
 app.use("/api/landing-interno", verifyToken, landingInternoRoutes);
 //control supervisor
-
 app.get("/api/control-supervisor", verifyToken, getControlSupervisorController);
 // registrar agente
 app.use("/api", userCRoutes);
@@ -1604,6 +1608,13 @@ app.use("/api/agentes", verifyToken, agenteAddRoutes)
 // agenteInfo
 app.use("/api/agente-info", verifyToken, agenteInfoRoutes);
 app.use("/api/crear-campanas", verifyToken, crearCampRoutes);
+// control de vistas (cabeceras)
+app.use("/api/control-vistas", verifyToken, controlVistasRoutes);
+//descargar
+app.use(
+  "/api",
+  registroRoutes
+);
 /**
  * @swagger
  * /api/busqueda:

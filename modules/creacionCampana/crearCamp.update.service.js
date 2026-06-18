@@ -53,7 +53,7 @@ export const updateCampaniaService = async (
       await coreClient.query(`
         SELECT current_database()
       `)
-
+/*
     console.log(
       "[PANEL_DB]",
       panelDb.rows[0]
@@ -63,7 +63,7 @@ export const updateCampaniaService = async (
       "[CORE_DB]",
       coreDb.rows[0]
     )
-
+   */ 
     // ======================================================
     // BEGIN
     // ======================================================
