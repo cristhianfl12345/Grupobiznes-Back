@@ -11,7 +11,7 @@ const options = {
     servers: [
       {
         url: "http://localhost:4000",
-        url: "https://panel.bizapp.pe",
+        url: "http://192.168.9.115:4000",
       },
     ],
     components: {
