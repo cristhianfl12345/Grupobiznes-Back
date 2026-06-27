@@ -17,6 +17,16 @@ export const QUERY_USUARIO_EXISTE = `
   WHERE usuario = $1
   LIMIT 1
 `
+export const QUERY_USUARIO_CAMPANA = `
+  SELECT
+    id_usuario,
+    id_campana,
+    modulo_activo
+  FROM agent.usuarios_carterizacion
+  WHERE id_usuario = $1
+    AND id_campana = $2
+  LIMIT 1
+`
 
 export const INSERT_USUARIO = `
   INSERT INTO agent.usuarios
@@ -75,7 +85,7 @@ export const UPSERT_HORARIO = `
 VALUES ($1, $2, $3)
 `
 
-export const INSERT_CARTERIZACION = `
+export const UPSERT_CARTERIZACION = `
   INSERT INTO agent.usuarios_carterizacion
   (
     id_usuario,
@@ -94,8 +104,20 @@ export const INSERT_CARTERIZACION = `
     NOW(),
     NOW()
   )
-
+  ON CONFLICT (id_usuario, id_campana)
+  DO UPDATE SET
+    modulo_activo = true,
+    fecha_modifica = NOW()
 `
+export const ACTIVAR_USUARIO_CAMPANA = `
+  UPDATE agent.usuarios_carterizacion
+  SET
+    modulo_activo = true,
+    fecha_modifica = NOW()
+  WHERE id_usuario = $1
+    AND id_campana = $2
+`
+
 // funciones del supervisor para agregar agentes a cada campaña y editar horarios
 export const QUERY_USUARIO_BY_DNI = `
   SELECT
@@ -150,4 +172,22 @@ export const INSERT_NUEVA_CAMPANA = `
     NOW()
   )
 
+`
+//modificar acceso a tipo de campana (tipo_campana)
+
+export const QUERY_TIPO_CAMPANA = `
+  UPDATE agent.usuarios_carterizacion
+  SET
+    tipo_campana = $1,
+    fecha_modifica = NOW()
+  WHERE id_usuario = $2
+    AND id_campana = $3
+  RETURNING *
+`
+
+export const QUERY_OBTENER_TIPO_CAMPANA = `
+  SELECT tipo_campana
+  FROM agent.usuarios_carterizacion
+  WHERE id_usuario = $1
+    AND id_campana = $2
 `

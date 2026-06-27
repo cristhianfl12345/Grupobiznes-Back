@@ -26,6 +26,7 @@ import agenteInfoRoutes from "./modules/agenteInfo/agenteInfo.routes.js"
 import crearCampRoutes from "./modules/creacionCampana/crearCamp.routes.js"
 import registroRoutes from "./modules/DescargaRegistro/registro.service.js";
 import controlVistasRoutes from "./modules/controlVistas/controlVistas.routes.js";
+import homeRoutes from './modules/homeDashboard/home.routes.js'
 
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./swagger/swagger.js";
@@ -1610,6 +1611,7 @@ app.use("/api/agente-info", verifyToken, agenteInfoRoutes);
 app.use("/api/crear-campanas", verifyToken, crearCampRoutes);
 // control de vistas (cabeceras)
 app.use("/api/control-vistas", verifyToken, controlVistasRoutes);
+app.use('/api/dashboard', homeRoutes)
 //descargar
 app.use(
   "/api",

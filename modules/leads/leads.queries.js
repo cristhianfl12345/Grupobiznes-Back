@@ -62,7 +62,12 @@ idlead,
     g.ultimo_hora AS ultimohora,
     g.ult_ges_asesor_name AS ultgesasesorname,
 
-    '' AS perfil,
+    da.perfil AS perfil,
+    da.suma_aseguradora AS suma_aseguradora,
+    da.prima_recurrente AS prima_recurrente,
+    da.monto_de_deuda AS monto_de_deuda,
+    da.etiqueta_endoso AS etiqueta_endoso,
+    da.segmento_tasa AS segmento_tasa,
 
     -- TIEMPO DE GESTION
     (g.primr_hora - lc.fecha_creacion::time) AS horai,
@@ -94,6 +99,7 @@ FROM core.leads l
 
 INNER JOIN core.leads_campania lc 
     ON l.idordenleads = lc.IdLead
+    LEFT JOIN core.leads_campania_datos AS da on lc.lead_uuid = da.lead_uuid
 
 LEFT JOIN performance.dm_leads_gestion g 
     ON l.idordenleads = g.id_lead	
@@ -184,7 +190,8 @@ SELECT
 FROM agent.usuarios_carterizacion uc
 INNER JOIN agent.usuarios u
     ON u.id_usuario = uc.id_usuario
-WHERE uc.id_campana = $1; `;
+WHERE uc.id_campana = $1
+AND uc.modulo_activo = true; `;
 
 export const QUERY_MASIVOS_CARTERIZADO = `
 SELECT 
@@ -204,25 +211,20 @@ INNER JOIN agent.usuarios_plataformas up
 WHERE 
     uc.id_campana = $1
     AND up.id_plataforma = $2
+    AND uc.modulo_activo = true
 
 ORDER BY u.nombre ASC;
 `
 export const QUERY_CARTERIZAR_INDIVIDUAL = `
-INSERT INTO assignment.leads_asignados (
-    id_leads,
-    id_camp,
-    id_usuario,
-    fecha_reg,
-    status_asignado
-)
-VALUES (
-    $1,
-    $2,
-    $3,
-    NOW(),
-    1
-)
-RETURNING *
+UPDATE assignment.leads_asignados
+SET
+    id_usuario = $3,
+    fecha_actualizacion = NOW(),
+    status_asignado = 1
+WHERE
+    id_leads = $1
+    AND id_camp = $2
+RETURNING *;
 `;
 export const QUERY_GET_LEADS_ASIGNADOS = `
 SELECT

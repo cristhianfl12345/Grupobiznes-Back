@@ -8,7 +8,6 @@ export const QUERY_BUSCAR_DNI = `
   FROM reniec
   WHERE dni_int = @dni
 `;
-
 export const QUERY_OBTENER_DETALLE = `
   SELECT
     dni_int AS dni,
@@ -37,7 +36,7 @@ export const QUERY_OBTENER_DETALLE = `
   FROM reniec
   WHERE dni_int = @dni
 `;
-// insertar personal
+
 export const INSERT_PERSONA = `
   INSERT INTO resources.personas (
     tipo_documento,

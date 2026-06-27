@@ -11,11 +11,15 @@ import {
   UPSERT_CREDENCIAL,
   INSERT_PLATAFORMA,
   UPSERT_HORARIO,
-  INSERT_CARTERIZACION,
+  UPSERT_CARTERIZACION,
   QUERY_USUARIO_BY_DNI,
   UPDATE_HORARIO,
   UPDATE_HORARIO_BY_USUARIO,
-INSERT_NUEVA_CAMPANA
+INSERT_NUEVA_CAMPANA,
+QUERY_USUARIO_CAMPANA,
+ACTIVAR_USUARIO_CAMPANA,
+QUERY_TIPO_CAMPANA,
+QUERY_OBTENER_TIPO_CAMPANA
 } from './agenteAdd.queries.js'
 
 // ======================================================
@@ -32,7 +36,7 @@ export const buscarPersonaService = async (
   )
 
   if (result.rows.length === 0) {
-    throw new Error('Persona no encontrada')
+    throw new Error('No se encontro al personal, contactar con RRHH')
   }
 
   const persona = result.rows[0]
@@ -132,7 +136,7 @@ export const crearAgenteService = async ({
     )
 
     if (personaResult.rows.length === 0) {
-      throw new Error('No se encontró la persona')
+      throw new Error('No se encontró al personal, contactar con RRHH')
     }
 
     const persona = personaResult.rows[0]
@@ -214,7 +218,37 @@ export const crearAgenteService = async ({
         ]
       )
     }
+// campana existe
+const campanaExistente =
+  await client.query(
+    QUERY_USUARIO_CAMPANA,
+    [
+      id_usuario,
+      id_campana
+    ]
+  )
 
+if (campanaExistente.rows.length > 0) {
+
+  const registro =
+    campanaExistente.rows[0]
+
+  if (registro.modulo_activo === true) {
+
+    throw new Error(
+      'Este usuario ya se encuentra registrado en esta campaña'
+    )
+
+  }
+
+  if (registro.modulo_activo === false) {
+
+    throw new Error(
+      'Este usuario se encuentra inactivo para esta campaña'
+    )
+
+  }
+}
     // =========================================
     // CREDENCIALES
     // =========================================
@@ -258,7 +292,7 @@ export const crearAgenteService = async ({
     // =========================================
 
     await client.query(
-      INSERT_CARTERIZACION,
+      UPSERT_CARTERIZACION,
       [
         id_usuario,
         id_campana
@@ -337,13 +371,45 @@ export const actualizarHorarioCampanaService = async ({
     // INSERT CAMPAÑA
     // =========================================
 
-    await client.query(
-      INSERT_NUEVA_CAMPANA,
-      [
-        id_usuario,
-        id_campana
-      ]
+// =========================================
+// VALIDAR CAMPAÑA
+// =========================================
+
+const campanaResult = await client.query(
+  QUERY_USUARIO_CAMPANA,
+  [
+    id_usuario,
+    id_campana
+  ]
+)
+
+if (campanaResult.rows.length > 0) {
+
+  const registro = campanaResult.rows[0]
+
+  // YA ACTIVO
+  if (registro.modulo_activo === true) {
+    throw new Error(
+      'Este usuario ya se encuentra registrado en esta campaña'
     )
+  }
+
+  // EXISTE PERO INACTIVO → FRONT DEBE ACTIVAR
+  if (registro.modulo_activo === false) {
+    throw new Error(
+      'Este usuario se encuentra inactivo para esta campaña'
+    )
+  }
+}
+
+// SOLO SI NO EXISTE → INSERT
+await client.query(
+  INSERT_NUEVA_CAMPANA,
+  [
+    id_usuario,
+    id_campana
+  ]
+)
 
     await client.query('COMMIT')
 
@@ -364,4 +430,151 @@ export const actualizarHorarioCampanaService = async ({
     client.release()
 
   }
+}
+// ======================================================
+// ACTIVAR USUARIO EN CAMPAÑA
+// ======================================================
+
+export const activarUsuarioCampanaService = async ({
+  numero_documento,
+  id_campana
+}) => {
+
+  const client = await db.connect()
+
+  try {
+
+    await client.query('BEGIN')
+
+    const usuarioResult = await client.query(
+      QUERY_USUARIO_BY_DNI,
+      [numero_documento]
+    )
+
+    if (usuarioResult.rows.length === 0) {
+      throw new Error('Usuario no encontrado')
+    }
+
+    const id_usuario =
+      usuarioResult.rows[0].id_usuario
+
+    const campanaResult = await client.query(
+      QUERY_USUARIO_CAMPANA,
+      [
+        id_usuario,
+        id_campana
+      ]
+    )
+
+    if (campanaResult.rows.length === 0) {
+      throw new Error(
+        'El usuario no se encuentra registrado en esta campaña'
+      )
+    }
+
+    await client.query(
+      ACTIVAR_USUARIO_CAMPANA,
+      [
+        id_usuario,
+        id_campana
+      ]
+    )
+
+    await client.query('COMMIT')
+
+    return {
+      ok: true,
+      message: 'Usuario activado correctamente',
+      id_usuario
+    }
+
+  } catch (error) {
+
+    await client.query('ROLLBACK')
+
+    throw error
+
+  } finally {
+
+    client.release()
+
+  }
+}
+// TIPO CAMPANA
+export const actualizarTipoCampanaService = async ({
+  id_usuario,
+  id_campana
+}) => {
+
+  const client = await db.connect()
+
+  try {
+
+    await client.query("BEGIN")
+
+    const actual = await client.query(
+      QUERY_OBTENER_TIPO_CAMPANA,
+      [id_usuario, id_campana]
+    )
+
+    if (actual.rowCount === 0) {
+      throw new Error("No existe relación usuario-campaña")
+    }
+
+    const tipoActual = Number(actual.rows[0].tipo_campana)
+
+    const nuevoTipo = tipoActual === 1 ? 2 : 1
+
+    const result = await client.query(
+      QUERY_TIPO_CAMPANA,
+      [
+        nuevoTipo,
+        id_usuario,
+        id_campana
+      ]
+    )
+
+    if (result.rowCount === 0) {
+      throw new Error("No se pudo actualizar el tipo de campaña")
+    }
+
+    await client.query("COMMIT")
+
+    return {
+      ok: true,
+      message: "Tipo de campaña actualizado correctamente",
+      data: result.rows[0]
+    }
+
+  } catch (error) {
+
+    await client.query("ROLLBACK")
+    throw error
+
+  } finally {
+
+    client.release()
+
+  }
+
+}
+export const obtenerTipoCampanaService = async ({
+  id_usuario,
+  id_campana
+}) => {
+
+  const result = await db.query(
+    QUERY_OBTENER_TIPO_CAMPANA,
+    [id_usuario, id_campana]
+  )
+
+  if (result.rowCount === 0) {
+    throw new Error("No existe relación usuario-campaña")
+  }
+
+  return {
+    ok: true,
+    data: result.rows[0]
+  }
+
 }

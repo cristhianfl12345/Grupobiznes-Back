@@ -14,6 +14,7 @@ SELECT
     uh.ultimo_ping,
 
     uc.id_reg AS id_carteriza,
+    uc.tipo_campana AS tipo_campana,
 
     uch.id_reg AS id_horario_fuente,
     uch.fuente,

@@ -4,7 +4,9 @@ import express from "express";
 
 import {
   getControlVistaController,
-  updateControlVistaController
+  updateControlVistaController,
+  getControlVistaAgenteController,
+  updateControlVistaAgenteController
 } from "./controlVistas.controller.js";
 
 const router = express.Router();
@@ -26,5 +28,27 @@ router.put(
   "/",
   updateControlVistaController
 );
+
+
+
+
+/**
+ * Obtener configuración de vista por campaña  AGENTEEEEE
+ * GET /control-vistas/:idCamp
+ */
+router.get(
+  "/vista-agente/:idCamp",
+  getControlVistaAgenteController
+);
+
+/**
+ * Actualizar configuración de vista  AGENTEEEEE
+ * PUT /control-vistas
+ */
+router.put(
+  "/vista-agente/",
+  updateControlVistaAgenteController
+);
+
 
 export default router;

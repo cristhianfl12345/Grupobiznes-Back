@@ -7,7 +7,8 @@ import { pg_admindb } from "../../config/pg_admin.js";
 const JWT_SECRET = "$2a$12$5H/LNYidqFAEL5R5L8I0d.H0AOlf3lLBKLN.cqpFOXsuIdkgQUmOq";
 
 // CONFIG
-const NOTIF_API = "http://192.168.9.115:4444/api/notif";
+const NOTIF_API = "http://192.168.7.51:3005/api/notif";
+//const NOTIF_API = "http://192.168.9.115:4444/api/notif";
 const INTERVAL = 3000; 
 
 // cache para evitar duplicados
@@ -69,7 +70,7 @@ export const initNotiSocket = (server) => {
 
       const interval = setInterval(async () => {
         try {
-          // 👉 fecha de hoy (mismo formato que tu API)
+          // fecha de hoy (mismo formato que tu API)
           const hoy = new Intl.DateTimeFormat("es-PE", {
             timeZone: "America/Lima",
             year: "numeric",
@@ -84,7 +85,7 @@ export const initNotiSocket = (server) => {
 
             if (!Array.isArray(data) || data.length === 0) continue;
 
-            // 👉 FILTRO MINIMO
+            // FILTRO MINIMO
             const hoyData = data.filter(f => f.startsWith(hoy));
 
             if (hoyData.length === 0) continue;
